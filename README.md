@@ -8,6 +8,7 @@ A web-based tool for converting images into multi-layer shadow art silhouettes f
 - 🔢 **Customizable layers** - Choose 3-10 depth layers
 - ⚙️ **Adjustable detail** - Control silhouette complexity for easier cutting
 - 📏 **Spacing guidance** - Set physical spacing between paper layers
+- 🎭 **3D Preview** - Interactive visualization of assembled shadow box with rotation and lighting controls
 - 📦 **SVG Export** - Download individual layers or all as ZIP
 - 💡 **Assembly instructions** - Included guide for building your shadow box
 
@@ -16,8 +17,9 @@ A web-based tool for converting images into multi-layer shadow art silhouettes f
 1. **Upload** - Choose an image with clear depth and interesting subjects
 2. **Configure** - Adjust number of layers, detail level, and spacing
 3. **Generate** - The app analyzes depth and creates layer silhouettes
-4. **Download** - Get SVG files ready for Cricut Design Space
-5. **Create** - Cut, stack, and assemble your shadow box art!
+4. **Preview** - See your assembled shadow box in 3D with interactive controls
+5. **Download** - Get SVG files ready for Cricut Design Space
+6. **Create** - Cut, stack, and assemble your shadow box art!
 
 ## Hosting on GitHub Pages
 
@@ -117,6 +119,13 @@ The app uses a multi-step process to create shadow box layers:
 - **Low detail**: Simpler shapes, easier to cut
 - **Medium detail**: Balanced complexity (recommended)
 - **High detail**: Intricate silhouettes, challenging cuts
+
+### 3D Preview Controls
+- **Rotation**: Spin the shadow box left/right to view from different angles
+- **Tilt**: Adjust the vertical viewing angle
+- **Lighting**: Control backlight intensity to see depth effect
+- **Hover interaction**: Mouse over individual layer cards to highlight them in the 3D view
+- **Reset View**: Return to default viewing angle
 
 ### Assembly Tips
 - Use 65-110lb cardstock for easy cutting

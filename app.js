@@ -528,6 +528,10 @@ ${svg.innerHTML}
         document.getElementById('processingSection').style.display = 'none';
         document.getElementById('resultsSection').style.display = 'block';
         
+        // Create 3D preview
+        this.create3DPreview();
+        this.setup3DControls();
+        
         const layerGrid = document.getElementById('layerGrid');
         layerGrid.innerHTML = '';
         
@@ -537,9 +541,100 @@ ${svg.innerHTML}
         });
     }
     
+    create3DPreview() {
+        const scene = document.getElementById('scene3d');
+        scene.innerHTML = '';
+        
+        // Calculate spacing in pixels (converted from inches)
+        const baseSpacing = 30; // pixels per 0.25 inches
+        const spacingMultiplier = this.settings.spacing / 0.25;
+        const layerSpacing = baseSpacing * spacingMultiplier;
+        
+        this.layers.forEach((layer, index) => {
+            const layerDiv = document.createElement('div');
+            layerDiv.className = 'preview-3d-layer';
+            
+            // Assign layer category for styling
+            if (index < this.layers.length / 3) {
+                layerDiv.classList.add('back-layer');
+            } else if (index < (this.layers.length * 2) / 3) {
+                layerDiv.classList.add('mid-layer');
+            } else {
+                layerDiv.classList.add('front-layer');
+            }
+            
+            // Create a colored version for preview
+            const svgClone = layer.svg.cloneNode(true);
+            layerDiv.appendChild(svgClone);
+            
+            // Position layer with depth
+            const zDepth = index * layerSpacing;
+            layerDiv.style.transform = `
+                translate(-50%, -50%) 
+                translateZ(${zDepth}px)
+            `;
+            
+            scene.appendChild(layerDiv);
+        });
+        
+        // Set initial rotation
+        this.update3DView(20, 15, 70);
+    }
+    
+    setup3DControls() {
+        const rotationControl = document.getElementById('rotationControl');
+        const tiltControl = document.getElementById('tiltControl');
+        const lightingControl = document.getElementById('lightingControl');
+        const resetViewBtn = document.getElementById('resetViewBtn');
+        
+        const updateView = () => {
+            const rotation = parseFloat(rotationControl.value);
+            const tilt = parseFloat(tiltControl.value);
+            const lighting = parseFloat(lightingControl.value);
+            this.update3DView(rotation, tilt, lighting);
+        };
+        
+        rotationControl.addEventListener('input', updateView);
+        tiltControl.addEventListener('input', updateView);
+        lightingControl.addEventListener('input', updateView);
+        
+        resetViewBtn.addEventListener('click', () => {
+            rotationControl.value = 20;
+            tiltControl.value = 15;
+            lightingControl.value = 70;
+            updateView();
+        });
+    }
+    
+    update3DView(rotationY, rotationX, lighting) {
+        const scene = document.getElementById('scene3d');
+        const container = document.getElementById('preview3d');
+        
+        // Update scene rotation
+        scene.style.transform = `
+            rotateX(${rotationX}deg)
+            rotateY(${rotationY}deg)
+            translateZ(-100px)
+        `;
+        
+        // Update lighting effect
+        const lightOpacity = lighting / 100;
+        container.style.setProperty('--light-intensity', lightOpacity);
+        
+        // Add glow effect based on lighting
+        const layers = scene.querySelectorAll('.preview-3d-layer svg');
+        layers.forEach((svg, index) => {
+            const glowIntensity = (lighting / 100) * (1 - index / layers.length);
+            svg.style.filter = `
+                drop-shadow(0 ${4 + glowIntensity * 8}px ${12 + glowIntensity * 20}px rgba(0,0,0,${0.3 + glowIntensity * 0.4}))
+            `;
+        });
+    }
+    
     createLayerCard(layer, index) {
         const card = document.createElement('div');
         card.className = 'layer-card';
+        card.dataset.layerIndex = index;
         
         card.innerHTML = `
             <div class="layer-header">
@@ -554,11 +649,60 @@ ${svg.innerHTML}
             </button>
         `;
         
+        // Add hover interaction with 3D preview
+        card.addEventListener('mouseenter', () => {
+            this.highlight3DLayer(index);
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            this.unhighlight3DLayers();
+        });
+        
         card.querySelector('.layer-download-btn').addEventListener('click', () => {
             this.downloadLayer(index);
         });
         
         return card;
+    }
+    
+    highlight3DLayer(index) {
+        const scene = document.getElementById('scene3d');
+        const layers = scene.querySelectorAll('.preview-3d-layer');
+        
+        layers.forEach((layer, i) => {
+            if (i === index) {
+                layer.style.transform = layer.style.transform.replace('translateZ', 'scale(1.1) translateZ');
+                layer.style.zIndex = '1000';
+                layer.querySelector('svg').style.filter = `
+                    drop-shadow(0 8px 24px rgba(212, 132, 92, 0.6))
+                    drop-shadow(0 0 40px rgba(212, 132, 92, 0.4))
+                `;
+            } else {
+                layer.style.opacity = '0.3';
+            }
+        });
+    }
+    
+    unhighlight3DLayers() {
+        const scene = document.getElementById('scene3d');
+        const layers = scene.querySelectorAll('.preview-3d-layer');
+        
+        layers.forEach((layer) => {
+            layer.style.transform = layer.style.transform.replace('scale(1.1) ', '');
+            layer.style.zIndex = '';
+            layer.style.opacity = '1';
+        });
+        
+        // Reapply lighting effect
+        const lightingControl = document.getElementById('lightingControl');
+        const lighting = parseFloat(lightingControl.value);
+        const svgs = scene.querySelectorAll('.preview-3d-layer svg');
+        svgs.forEach((svg, index) => {
+            const glowIntensity = (lighting / 100) * (1 - index / svgs.length);
+            svg.style.filter = `
+                drop-shadow(0 ${4 + glowIntensity * 8}px ${12 + glowIntensity * 20}px rgba(0,0,0,${0.3 + glowIntensity * 0.4}))
+            `;
+        });
     }
     
     downloadLayer(index) {

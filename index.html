@@ -110,6 +110,42 @@
                 <p>Download individual layers or all as a ZIP file</p>
             </div>
             
+            <!-- 3D Preview Card -->
+            <div class="preview-3d-card card">
+                <div class="preview-3d-header">
+                    <h3>Assembled Preview</h3>
+                    <p>See how your layers will look when stacked</p>
+                </div>
+                
+                <div class="preview-3d-container" id="preview3d">
+                    <div class="preview-3d-scene" id="scene3d">
+                        <!-- Layers will be inserted here -->
+                    </div>
+                </div>
+                
+                <div class="preview-controls">
+                    <div class="control-group">
+                        <label>
+                            <span>Rotation</span>
+                            <input type="range" id="rotationControl" min="-45" max="45" value="20" class="slider">
+                        </label>
+                    </div>
+                    <div class="control-group">
+                        <label>
+                            <span>Tilt</span>
+                            <input type="range" id="tiltControl" min="-30" max="30" value="15" class="slider">
+                        </label>
+                    </div>
+                    <div class="control-group">
+                        <label>
+                            <span>Lighting</span>
+                            <input type="range" id="lightingControl" min="0" max="100" value="70" class="slider">
+                        </label>
+                    </div>
+                    <button class="btn-secondary" id="resetViewBtn">Reset View</button>
+                </div>
+            </div>
+            
             <div class="layer-preview-grid" id="layerGrid">
                 <!-- Layers will be inserted here dynamically -->
             </div>
