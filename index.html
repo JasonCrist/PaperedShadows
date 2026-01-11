@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow Box Layer Generator - Cricut Shadow Art</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,800;1,9..144,300&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="grain-overlay"></div>
+    
+    <header class="hero">
+        <div class="hero-content">
+            <h1 class="title">Shadow Box<br><span class="title-accent">Layer Generator</span></h1>
+            <p class="subtitle">Transform your images into stunning multi-layer shadow art for Cricut cutting</p>
+        </div>
+        <div class="decorative-line"></div>
+    </header>
+
+    <main class="container">
+        <!-- Upload Section -->
+        <section class="upload-section card">
+            <div class="upload-header">
+                <h2>1. Upload Your Image</h2>
+                <p>Choose a photo with clear subjects and interesting depth</p>
+            </div>
+            
+            <div class="upload-zone" id="uploadZone">
+                <input type="file" id="imageInput" accept="image/*" hidden>
+                <div class="upload-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                </div>
+                <p class="upload-text">Click to upload or drag and drop</p>
+                <p class="upload-hint">PNG, JPG, WEBP up to 10MB</p>
+            </div>
+            
+            <div class="preview-container" id="previewContainer" style="display: none;">
+                <img id="previewImage" alt="Preview">
+                <button class="btn-secondary" id="changeImage">Change Image</button>
+            </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section class="settings-section card" id="settingsSection" style="display: none;">
+            <div class="settings-header">
+                <h2>2. Configure Layers</h2>
+                <p>Adjust settings to create the perfect shadow box effect</p>
+            </div>
+            
+            <div class="settings-grid">
+                <div class="setting-group">
+                    <label for="numLayers">
+                        <span class="label-text">Number of Layers</span>
+                        <span class="label-value" id="numLayersValue">5</span>
+                    </label>
+                    <input type="range" id="numLayers" min="3" max="10" value="5" class="slider">
+                    <p class="setting-hint">More layers = more depth and complexity</p>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="threshold">
+                        <span class="label-text">Detail Level</span>
+                        <span class="label-value" id="thresholdValue">Medium</span>
+                    </label>
+                    <input type="range" id="threshold" min="1" max="3" value="2" class="slider">
+                    <p class="setting-hint">Low = simple shapes, High = intricate details</p>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="spacing">
+                        <span class="label-text">Layer Spacing</span>
+                        <span class="label-value" id="spacingValue">0.25"</span>
+                    </label>
+                    <input type="range" id="spacing" min="0.125" max="0.5" step="0.125" value="0.25" class="slider">
+                    <p class="setting-hint">Physical depth between paper layers</p>
+                </div>
+            </div>
+            
+            <button class="btn-primary" id="generateBtn">
+                <span>Generate Layers</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                </svg>
+            </button>
+        </section>
+
+        <!-- Processing Section -->
+        <section class="processing-section" id="processingSection" style="display: none;">
+            <div class="processing-content">
+                <div class="spinner"></div>
+                <h3>Analyzing depth and generating layers...</h3>
+                <p id="processingStatus">Initializing...</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section class="results-section" id="resultsSection" style="display: none;">
+            <div class="results-header">
+                <h2>3. Your Shadow Box Layers</h2>
+                <p>Download individual layers or all as a ZIP file</p>
+            </div>
+            
+            <div class="layer-preview-grid" id="layerGrid">
+                <!-- Layers will be inserted here dynamically -->
+            </div>
+            
+            <div class="export-options">
+                <button class="btn-primary" id="downloadAllBtn">
+                    <span>Download All Layers (ZIP)</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </button>
+                <button class="btn-secondary" id="startOverBtn">Start Over</button>
+            </div>
+            
+            <div class="instructions-card">
+                <h3>Assembly Instructions</h3>
+                <ol>
+                    <li>Cut each layer on cardstock or mat board using your Cricut</li>
+                    <li>Stack layers from back (Layer 1) to front (Layer 5)</li>
+                    <li>Use foam spacers or mounting tape between layers (0.25" recommended)</li>
+                    <li>Add LED strip or backlight behind Layer 1 for stunning illumination</li>
+                    <li>Frame in a shadow box frame with appropriate depth</li>
+                </ol>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>Made for makers and shadow art enthusiasts</p>
+            <p class="footer-note">Best results with images that have clear foreground and background separation</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
