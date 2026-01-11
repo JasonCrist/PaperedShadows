@@ -11,6 +11,17 @@ class ShadowBoxGenerator {
             spacing: 0.25
         };
         
+        // Annotation system
+        this.annotationData = null;
+        this.currentDepthTool = 'foreground';
+        this.brushSize = 40;
+        this.isDrawing = false;
+        
+        // Refinement system
+        this.layerHistory = [];
+        this.currentHistoryIndex = -1;
+        this.selectedLayerIndex = 0;
+        
         this.init();
     }
     
@@ -90,6 +101,90 @@ class ShadowBoxGenerator {
         document.getElementById('startOverBtn').addEventListener('click', () => {
             this.reset();
         });
+        
+        // Annotation tools
+        this.setupAnnotationTools();
+        
+        // Refinement tools
+        this.setupRefinementTools();
+    }
+    
+    setupAnnotationTools() {
+        const foregroundTool = document.getElementById('foregroundTool');
+        const backgroundTool = document.getElementById('backgroundTool');
+        const middleTool = document.getElementById('middleTool');
+        const brushSizeSlider = document.getElementById('brushSize');
+        const clearBtn = document.getElementById('clearAnnotations');
+        const toggleOverlayBtn = document.getElementById('toggleDepthOverlay');
+        const skipBtn = document.getElementById('skipAnnotation');
+        const continueBtn = document.getElementById('continueToSettings');
+        
+        [foregroundTool, backgroundTool, middleTool].forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tool-btn[data-depth]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.currentDepthTool = btn.dataset.depth;
+            });
+        });
+        
+        brushSizeSlider.addEventListener('input', (e) => {
+            this.brushSize = parseInt(e.target.value);
+            document.getElementById('brushSizeValue').textContent = `${this.brushSize}px`;
+        });
+        
+        clearBtn.addEventListener('click', () => {
+            this.clearAnnotations();
+        });
+        
+        toggleOverlayBtn.addEventListener('click', () => {
+            const overlay = document.getElementById('depthOverlayCanvas');
+            overlay.classList.toggle('visible');
+        });
+        
+        skipBtn.addEventListener('click', () => {
+            this.annotationData = null;
+            this.showSettings();
+            document.getElementById('annotationSection').style.display = 'none';
+        });
+        
+        continueBtn.addEventListener('click', () => {
+            this.showSettings();
+            document.getElementById('annotationSection').style.display = 'none';
+        });
+    }
+    
+    setupRefinementTools() {
+        const layerSelect = document.getElementById('layerSelect');
+        const simplifyBtn = document.getElementById('simplifyBtn');
+        const addDetailBtn = document.getElementById('addDetailBtn');
+        const smoothBtn = document.getElementById('smoothBtn');
+        const removeSmallBtn = document.getElementById('removeSmallBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        
+        layerSelect.addEventListener('change', (e) => {
+            this.selectedLayerIndex = parseInt(e.target.value);
+            this.updateRefinementPreview();
+        });
+        
+        simplifyBtn.addEventListener('click', () => {
+            this.simplifyLayer(this.selectedLayerIndex);
+        });
+        
+        addDetailBtn.addEventListener('click', () => {
+            this.addDetailToLayer(this.selectedLayerIndex);
+        });
+        
+        smoothBtn.addEventListener('click', () => {
+            this.smoothLayer(this.selectedLayerIndex);
+        });
+        
+        removeSmallBtn.addEventListener('click', () => {
+            this.removeSmallArtifacts(this.selectedLayerIndex);
+        });
+        
+        undoBtn.addEventListener('click', () => {
+            this.undoRefinement();
+        });
     }
     
     updateSettingValues() {
@@ -127,6 +222,219 @@ class ShadowBoxGenerator {
         previewImage.src = imageUrl;
         uploadZone.style.display = 'none';
         previewContainer.style.display = 'block';
+        
+        // Show annotation section
+        this.showAnnotation();
+    }
+    
+    showAnnotation() {
+        document.getElementById('annotationSection').style.display = 'block';
+        this.initializeAnnotationCanvas();
+    }
+    
+    initializeAnnotationCanvas() {
+        const canvas = document.getElementById('annotationCanvas');
+        const overlayCanvas = document.getElementById('depthOverlayCanvas');
+        const ctx = canvas.getContext('2d');
+        const overlayCtx = overlayCanvas.getContext('2d');
+        
+        // Size canvas to fit image
+        const maxSize = 800;
+        let width = this.uploadedImage.width;
+        let height = this.uploadedImage.height;
+        
+        if (width > height) {
+            if (width > maxSize) {
+                height = (height * maxSize) / width;
+                width = maxSize;
+            }
+        } else {
+            if (height > maxSize) {
+                width = (width * maxSize) / height;
+                height = maxSize;
+            }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        overlayCanvas.width = width;
+        overlayCanvas.height = height;
+        
+        // Draw image
+        ctx.drawImage(this.uploadedImage, 0, 0, width, height);
+        
+        // Initialize annotation data
+        this.annotationData = new Float32Array(width * height);
+        this.annotationData.fill(0.5); // 0.5 = unspecified (middle depth)
+        
+        // Set up drawing
+        this.setupCanvasDrawing(canvas);
+        
+        // Generate initial depth map overlay
+        this.updateDepthOverlay(overlayCanvas, overlayCtx);
+    }
+    
+    setupCanvasDrawing(canvas) {
+        const ctx = canvas.getContext('2d');
+        
+        const getMousePos = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        };
+        
+        const getTouchPos = (e) => {
+            if (e.touches.length === 0) return null;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            return {
+                x: (e.touches[0].clientX - rect.left) * scaleX,
+                y: (e.touches[0].clientY - rect.top) * scaleY
+            };
+        };
+        
+        const draw = (x, y) => {
+            const radius = this.brushSize / 2;
+            const depthValue = this.getDepthValue(this.currentDepthTool);
+            const color = this.getDepthColor(this.currentDepthTool);
+            
+            // Draw on canvas
+            ctx.globalAlpha = 0.4;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+            
+            // Update annotation data
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance <= radius) {
+                        const px = Math.round(x + dx);
+                        const py = Math.round(y + dy);
+                        
+                        if (px >= 0 && px < width && py >= 0 && py < height) {
+                            const idx = py * width + px;
+                            // Blend with existing value for smooth transitions
+                            const strength = 1 - (distance / radius);
+                            this.annotationData[idx] = this.annotationData[idx] * (1 - strength * 0.7) + 
+                                                       depthValue * (strength * 0.7);
+                        }
+                    }
+                }
+            }
+            
+            // Update overlay
+            const overlayCanvas = document.getElementById('depthOverlayCanvas');
+            const overlayCtx = overlayCanvas.getContext('2d');
+            this.updateDepthOverlay(overlayCanvas, overlayCtx);
+        };
+        
+        canvas.addEventListener('mousedown', (e) => {
+            this.isDrawing = true;
+            const pos = getMousePos(e);
+            draw(pos.x, pos.y);
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (this.isDrawing) {
+                const pos = getMousePos(e);
+                draw(pos.x, pos.y);
+            }
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            this.isDrawing = false;
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            this.isDrawing = false;
+        });
+        
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.isDrawing = true;
+            const pos = getTouchPos(e);
+            if (pos) draw(pos.x, pos.y);
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (this.isDrawing) {
+                const pos = getTouchPos(e);
+                if (pos) draw(pos.x, pos.y);
+            }
+        });
+        
+        canvas.addEventListener('touchend', () => {
+            this.isDrawing = false;
+        });
+    }
+    
+    getDepthValue(tool) {
+        switch (tool) {
+            case 'foreground': return 1.0;
+            case 'background': return 0.0;
+            case 'middle': return 0.5;
+            default: return 0.5;
+        }
+    }
+    
+    getDepthColor(tool) {
+        switch (tool) {
+            case 'foreground': return '#4a8870';
+            case 'background': return '#5b7fa8';
+            case 'middle': return '#d4a54c';
+            default: return '#888888';
+        }
+    }
+    
+    clearAnnotations() {
+        const canvas = document.getElementById('annotationCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Redraw original image
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(this.uploadedImage, 0, 0, canvas.width, canvas.height);
+        
+        // Reset annotation data
+        this.annotationData.fill(0.5);
+        
+        // Update overlay
+        const overlayCanvas = document.getElementById('depthOverlayCanvas');
+        const overlayCtx = overlayCanvas.getContext('2d');
+        this.updateDepthOverlay(overlayCanvas, overlayCtx);
+    }
+    
+    updateDepthOverlay(canvas, ctx) {
+        const width = canvas.width;
+        const height = canvas.height;
+        const imageData = ctx.createImageData(width, height);
+        
+        for (let i = 0; i < this.annotationData.length; i++) {
+            const depth = this.annotationData[i];
+            const idx = i * 4;
+            
+            // Create a blue (far) to red (close) gradient
+            imageData.data[idx] = depth * 255; // R
+            imageData.data[idx + 1] = (1 - Math.abs(depth - 0.5) * 2) * 255; // G
+            imageData.data[idx + 2] = (1 - depth) * 255; // B
+            imageData.data[idx + 3] = 255; // A
+        }
+        
+        ctx.putImageData(imageData, 0, 0);
     }
     
     showSettings() {
@@ -226,6 +534,7 @@ class ShadowBoxGenerator {
         // 1. Luminance (darker = farther)
         // 2. Position (bottom = closer for ground-based scenes)
         // 3. Contrast (sharp edges = closer)
+        // 4. User annotations (if provided)
         
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
@@ -240,10 +549,19 @@ class ShadowBoxGenerator {
                 // Position bias (bottom of image = closer)
                 const positionBias = (height - y) / height;
                 
-                // Combine factors
-                const depth = (luminance / 255) * 0.6 + positionBias * 0.4;
+                // Automatic depth estimation
+                let autoDepth = (luminance / 255) * 0.6 + positionBias * 0.4;
                 
-                depthMap[y * width + x] = depth;
+                // If we have user annotations, blend them in
+                if (this.annotationData) {
+                    const annotationDepth = this.annotationData[y * width + x];
+                    // Give more weight to user annotations where they exist (not 0.5)
+                    const annotationStrength = Math.abs(annotationDepth - 0.5) * 2;
+                    depthMap[y * width + x] = autoDepth * (1 - annotationStrength) + 
+                                             annotationDepth * annotationStrength;
+                } else {
+                    depthMap[y * width + x] = autoDepth;
+                }
             }
         }
         
@@ -528,10 +846,289 @@ ${svg.innerHTML}
         document.getElementById('processingSection').style.display = 'none';
         document.getElementById('resultsSection').style.display = 'block';
         
+        // Initialize refinement
+        this.initializeRefinement();
+        
         // Create 3D preview
         this.create3DPreview();
         this.setup3DControls();
         
+        const layerGrid = document.getElementById('layerGrid');
+        layerGrid.innerHTML = '';
+        
+        this.layers.forEach((layer, index) => {
+            const layerCard = this.createLayerCard(layer, index);
+            layerGrid.appendChild(layerCard);
+        });
+    }
+    
+    initializeRefinement() {
+        // Populate layer select
+        const layerSelect = document.getElementById('layerSelect');
+        layerSelect.innerHTML = '';
+        
+        this.layers.forEach((layer, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = `Layer ${layer.number} - ${layer.number === 1 ? 'Back' : layer.number === this.settings.numLayers ? 'Front' : 'Middle'}`;
+            layerSelect.appendChild(option);
+        });
+        
+        // Initialize history
+        this.layerHistory = [this.cloneLayers()];
+        this.currentHistoryIndex = 0;
+        
+        // Update preview
+        this.updateRefinementPreview();
+    }
+    
+    cloneLayers() {
+        return this.layers.map(layer => ({
+            ...layer,
+            svg: layer.svg.cloneNode(true),
+            svgString: layer.svgString
+        }));
+    }
+    
+    saveToHistory() {
+        // Remove any future history if we're not at the end
+        this.layerHistory = this.layerHistory.slice(0, this.currentHistoryIndex + 1);
+        
+        // Add new state
+        this.layerHistory.push(this.cloneLayers());
+        this.currentHistoryIndex++;
+        
+        // Limit history to 20 steps
+        if (this.layerHistory.length > 20) {
+            this.layerHistory.shift();
+            this.currentHistoryIndex--;
+        }
+        
+        // Update undo button
+        document.getElementById('undoBtn').disabled = this.currentHistoryIndex === 0;
+    }
+    
+    undoRefinement() {
+        if (this.currentHistoryIndex > 0) {
+            this.currentHistoryIndex--;
+            this.layers = this.cloneLayers(this.layerHistory[this.currentHistoryIndex]);
+            this.updateRefinementPreview();
+            this.update3DPreview();
+            this.updateLayerCards();
+            
+            document.getElementById('undoBtn').disabled = this.currentHistoryIndex === 0;
+        }
+    }
+    
+    updateRefinementPreview() {
+        const layer = this.layers[this.selectedLayerIndex];
+        const preview = document.getElementById('currentPreview');
+        
+        preview.innerHTML = '';
+        preview.appendChild(layer.svg.cloneNode(true));
+        
+        // Update complexity info
+        const pathData = layer.svg.querySelector('path').getAttribute('d');
+        const points = pathData.split(/[MLZ\s]+/).filter(p => p.length > 0).length;
+        
+        document.getElementById('pathPointsValue').textContent = points;
+        
+        let complexity = 'Low';
+        if (points > 100) complexity = 'Medium';
+        if (points > 300) complexity = 'High';
+        if (points > 600) complexity = 'Very High';
+        
+        document.getElementById('complexityValue').textContent = complexity;
+    }
+    
+    simplifyLayer(index) {
+        const layer = this.layers[index];
+        const pathElement = layer.svg.querySelector('path');
+        const pathData = pathElement.getAttribute('d');
+        
+        // Parse and simplify path
+        const simplified = this.simplifyPath(pathData, 2.0); // Increase tolerance
+        
+        pathElement.setAttribute('d', simplified);
+        layer.svgString = this.svgToString(layer.svg, layer.width, layer.height);
+        
+        this.saveToHistory();
+        this.updateRefinementPreview();
+        this.update3DPreview();
+        this.updateLayerCards();
+    }
+    
+    addDetailToLayer(index) {
+        const layer = this.layers[index];
+        const pathElement = layer.svg.querySelector('path');
+        const pathData = pathElement.getAttribute('d');
+        
+        // Parse and add detail
+        const detailed = this.subdividePath(pathData);
+        
+        pathElement.setAttribute('d', detailed);
+        layer.svgString = this.svgToString(layer.svg, layer.width, layer.height);
+        
+        this.saveToHistory();
+        this.updateRefinementPreview();
+        this.update3DPreview();
+        this.updateLayerCards();
+    }
+    
+    smoothLayer(index) {
+        const layer = this.layers[index];
+        const pathElement = layer.svg.querySelector('path');
+        const pathData = pathElement.getAttribute('d');
+        
+        // Apply smoothing
+        const smoothed = this.smoothPath(pathData);
+        
+        pathElement.setAttribute('d', smoothed);
+        layer.svgString = this.svgToString(layer.svg, layer.width, layer.height);
+        
+        this.saveToHistory();
+        this.updateRefinementPreview();
+        this.update3DPreview();
+        this.updateLayerCards();
+    }
+    
+    removeSmallArtifacts(index) {
+        const layer = this.layers[index];
+        const pathElement = layer.svg.querySelector('path');
+        const pathData = pathElement.getAttribute('d');
+        
+        // Remove small disconnected paths
+        const cleaned = this.removeSmallPaths(pathData, 50); // Minimum 50 points
+        
+        pathElement.setAttribute('d', cleaned);
+        layer.svgString = this.svgToString(layer.svg, layer.width, layer.height);
+        
+        this.saveToHistory();
+        this.updateRefinementPreview();
+        this.update3DPreview();
+        this.updateLayerCards();
+    }
+    
+    simplifyPath(pathData, tolerance) {
+        // Douglas-Peucker algorithm for path simplification
+        const commands = pathData.match(/[MLZ][^MLZ]*/g) || [];
+        const simplified = [];
+        
+        for (const cmd of commands) {
+            if (cmd[0] === 'M') {
+                simplified.push(cmd);
+            } else if (cmd[0] === 'L') {
+                const coords = cmd.substring(1).trim().split(/[\s,]+/);
+                if (coords.length >= 2) {
+                    // Keep every Nth point based on tolerance
+                    const skip = Math.max(1, Math.floor(tolerance));
+                    if (simplified.length % skip === 0) {
+                        simplified.push(cmd);
+                    }
+                }
+            } else if (cmd[0] === 'Z') {
+                simplified.push(cmd);
+            }
+        }
+        
+        return simplified.join(' ');
+    }
+    
+    subdividePath(pathData) {
+        // Add intermediate points between existing points
+        const commands = pathData.match(/[MLZ][^MLZ]*/g) || [];
+        const detailed = [];
+        let lastPoint = null;
+        
+        for (const cmd of commands) {
+            if (cmd[0] === 'M') {
+                const coords = cmd.substring(1).trim().split(/[\s,]+/);
+                lastPoint = [parseFloat(coords[0]), parseFloat(coords[1])];
+                detailed.push(cmd);
+            } else if (cmd[0] === 'L') {
+                const coords = cmd.substring(1).trim().split(/[\s,]+/);
+                const point = [parseFloat(coords[0]), parseFloat(coords[1])];
+                
+                if (lastPoint) {
+                    // Add midpoint
+                    const midX = (lastPoint[0] + point[0]) / 2;
+                    const midY = (lastPoint[1] + point[1]) / 2;
+                    detailed.push(`L ${midX},${midY}`);
+                }
+                
+                detailed.push(cmd);
+                lastPoint = point;
+            } else if (cmd[0] === 'Z') {
+                detailed.push(cmd);
+            }
+        }
+        
+        return detailed.join(' ');
+    }
+    
+    smoothPath(pathData) {
+        // Apply moving average smoothing
+        const commands = pathData.match(/[MLZ][^MLZ]*/g) || [];
+        const points = [];
+        
+        // Extract all points
+        for (const cmd of commands) {
+            if (cmd[0] === 'M' || cmd[0] === 'L') {
+                const coords = cmd.substring(1).trim().split(/[\s,]+/);
+                if (coords.length >= 2) {
+                    points.push([parseFloat(coords[0]), parseFloat(coords[1])]);
+                }
+            }
+        }
+        
+        // Smooth using moving average
+        const smoothed = [];
+        const windowSize = 3;
+        
+        for (let i = 0; i < points.length; i++) {
+            let sumX = 0, sumY = 0, count = 0;
+            
+            for (let j = Math.max(0, i - windowSize); j <= Math.min(points.length - 1, i + windowSize); j++) {
+                sumX += points[j][0];
+                sumY += points[j][1];
+                count++;
+            }
+            
+            smoothed.push([sumX / count, sumY / count]);
+        }
+        
+        // Rebuild path
+        let result = `M ${smoothed[0][0]},${smoothed[0][1]} `;
+        for (let i = 1; i < smoothed.length; i++) {
+            result += `L ${smoothed[i][0]},${smoothed[i][1]} `;
+        }
+        result += 'Z';
+        
+        return result;
+    }
+    
+    removeSmallPaths(pathData, minSize) {
+        // Split into individual paths and remove small ones
+        const paths = pathData.split('Z').filter(p => p.trim().length > 0);
+        const filtered = [];
+        
+        for (const path of paths) {
+            const commands = path.match(/[ML][^ML]*/g) || [];
+            if (commands.length >= minSize) {
+                filtered.push(path + ' Z');
+            }
+        }
+        
+        return filtered.join(' ');
+    }
+    
+    update3DPreview() {
+        // Recreate 3D preview with updated layers
+        this.create3DPreview();
+    }
+    
+    updateLayerCards() {
+        // Update individual layer cards
         const layerGrid = document.getElementById('layerGrid');
         layerGrid.innerHTML = '';
         
@@ -782,9 +1379,13 @@ Enjoy your shadow box art!
         this.uploadedImage = null;
         this.imageData = null;
         this.layers = [];
+        this.annotationData = null;
+        this.layerHistory = [];
+        this.currentHistoryIndex = -1;
         
         document.getElementById('uploadZone').style.display = 'block';
         document.getElementById('previewContainer').style.display = 'none';
+        document.getElementById('annotationSection').style.display = 'none';
         document.getElementById('settingsSection').style.display = 'none';
         document.getElementById('processingSection').style.display = 'none';
         document.getElementById('resultsSection').style.display = 'none';

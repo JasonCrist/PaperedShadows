@@ -159,6 +159,173 @@ body {
 }
 
 /* Upload Zone */
+.annotation-section {
+    display: none;
+}
+
+.annotation-header h2 {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: 0.5rem;
+}
+
+.annotation-header p {
+    color: var(--color-text-light);
+    margin-bottom: 2rem;
+}
+
+.annotation-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--color-bg);
+    border-radius: 8px;
+}
+
+.tool-group {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.tool-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--color-paper);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tool-btn:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+}
+
+.tool-btn.active {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+.tool-btn svg {
+    flex-shrink: 0;
+}
+
+.tool-btn[data-depth="foreground"].active {
+    background: #4a8870;
+    border-color: #4a8870;
+}
+
+.tool-btn[data-depth="background"].active {
+    background: #5b7fa8;
+    border-color: #5b7fa8;
+}
+
+.tool-btn[data-depth="middle"].active {
+    background: #d4a54c;
+    border-color: #d4a54c;
+}
+
+.brush-size-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-text-light);
+}
+
+.brush-size-label span:first-child {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.brush-size-label span:last-child {
+    font-weight: 600;
+    color: var(--color-accent);
+    min-width: 45px;
+}
+
+.brush-size-label .slider {
+    width: 120px;
+}
+
+.annotation-canvas-container {
+    position: relative;
+    background: var(--color-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+}
+
+.annotation-canvas-container canvas {
+    display: block;
+    max-width: 100%;
+    max-height: 600px;
+    cursor: crosshair;
+}
+
+#annotationCanvas {
+    position: relative;
+    z-index: 2;
+}
+
+#depthOverlayCanvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+#depthOverlayCanvas.visible {
+    opacity: 0.6;
+}
+
+.annotation-help {
+    background: linear-gradient(135deg, 
+        rgba(74, 136, 112, 0.1) 0%, 
+        rgba(212, 132, 92, 0.1) 100%);
+    border-left: 4px solid var(--color-accent);
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.annotation-help p {
+    margin: 0;
+    color: var(--color-text);
+    line-height: 1.6;
+}
+
+.annotation-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Upload Zone */
 .upload-zone {
     border: 3px dashed var(--color-border);
     border-radius: 12px;
@@ -526,6 +693,172 @@ body {
     height: fit-content;
     padding: 0.75rem 1.5rem;
     font-size: 0.875rem;
+}
+
+/* Layer Preview Grid */
+.refinement-card {
+    margin-bottom: 3rem;
+    background: var(--color-paper);
+}
+
+.refinement-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.refinement-header h3 {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    color: var(--color-primary);
+    margin-bottom: 0.5rem;
+}
+
+.refinement-header p {
+    color: var(--color-text-light);
+}
+
+.refinement-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.refinement-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.refinement-group label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.layer-select {
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: var(--color-text);
+    background: var(--color-paper);
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.layer-select:hover,
+.layer-select:focus {
+    border-color: var(--color-primary);
+    outline: none;
+}
+
+.refinement-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.refinement-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    background: var(--color-paper);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.refinement-btn:hover:not(:disabled) {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.refinement-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.refinement-btn svg {
+    flex-shrink: 0;
+}
+
+.refinement-info {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    padding: 1rem;
+    background: var(--color-bg);
+    border-radius: 8px;
+}
+
+.info-item {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.info-label {
+    font-size: 0.875rem;
+    color: var(--color-text-light);
+}
+
+.info-value {
+    font-weight: 600;
+    color: var(--color-accent);
+    font-family: var(--font-display);
+}
+
+.refinement-preview {
+    margin-top: 2rem;
+}
+
+.before-after {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+.preview-box {
+    background: var(--color-bg);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.preview-box h4 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--color-text);
+    margin-bottom: 1rem;
+}
+
+.preview-box > div {
+    min-height: 250px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 4px;
+    padding: 1rem;
+}
+
+.preview-box svg {
+    max-width: 100%;
+    max-height: 100%;
 }
 
 /* Layer Preview Grid */

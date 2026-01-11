@@ -5,21 +5,29 @@ A web-based tool for converting images into multi-layer shadow art silhouettes f
 ## Features
 
 - 🎨 **Upload any image** - Works with photos, illustrations, or designs
+- 🖌️ **Manual Depth Guidance** - Paint on your image to mark foreground, middle, and background elements for better layer detection
 - 🔢 **Customizable layers** - Choose 3-10 depth layers
 - ⚙️ **Adjustable detail** - Control silhouette complexity for easier cutting
+- ✨ **Detail Refinement Tools** - Simplify, add detail, smooth, or clean up individual layers after generation
 - 📏 **Spacing guidance** - Set physical spacing between paper layers
 - 🎭 **3D Preview** - Interactive visualization of assembled shadow box with rotation and lighting controls
 - 📦 **SVG Export** - Download individual layers or all as ZIP
 - 💡 **Assembly instructions** - Included guide for building your shadow box
+- ↩️ **Undo/Redo** - Full history for refinement changes
 
 ## How It Works
 
 1. **Upload** - Choose an image with clear depth and interesting subjects
-2. **Configure** - Adjust number of layers, detail level, and spacing
-3. **Generate** - The app analyzes depth and creates layer silhouettes
-4. **Preview** - See your assembled shadow box in 3D with interactive controls
-5. **Download** - Get SVG files ready for Cricut Design Space
-6. **Create** - Cut, stack, and assemble your shadow box art!
+2. **Guide Depth (Optional)** - Paint on the image to identify what's close and what's far away
+   - Green = Foreground (closest to camera)
+   - Yellow = Middle distance
+   - Blue = Background (farthest away)
+3. **Configure** - Adjust number of layers, detail level, and spacing
+4. **Generate** - The app analyzes depth (using your guidance) and creates layer silhouettes
+5. **Refine Details** - Adjust individual layers with simplify, add detail, smooth, or cleanup tools
+6. **Preview** - See your assembled shadow box in 3D with interactive controls
+7. **Download** - Get SVG files ready for Cricut Design Space
+8. **Create** - Cut, stack, and assemble your shadow box art!
 
 ## Hosting on GitHub Pages
 
@@ -120,6 +128,65 @@ The app uses a multi-step process to create shadow box layers:
 - **Medium detail**: Balanced complexity (recommended)
 - **High detail**: Intricate silhouettes, challenging cuts
 
+### Manual Depth Guidance (Optional but Powerful!)
+
+The manual depth annotation tool dramatically improves layer accuracy. Here's how to use it:
+
+**Why use it?**
+- The automatic depth detection works well but isn't perfect
+- Helps when foreground/background aren't obvious
+- Gives you precise control over which elements end up in which layer
+
+**How to use it:**
+1. Select a depth tool (Foreground, Middle, or Background)
+2. Adjust brush size to paint quickly or precisely
+3. Paint over the parts of your image that belong at that depth
+4. Toggle "Show Depth Map" to see what the algorithm sees
+5. The more you paint, the better the results!
+
+**Pro tips:**
+- Start with the most obvious elements (main subject = foreground, sky = background)
+- You don't need to paint everything - just key areas
+- Larger brush for big areas, smaller brush for precision
+- Click "Clear All" to start over if needed
+- You can skip this step if the image has obvious depth
+
+### Detail Refinement Tools
+
+After generating layers, you can fine-tune each one individually:
+
+**Simplify** - Reduces path complexity
+- Use when layers are too intricate for your Cricut to cut
+- Makes smoother, bolder shapes
+- Great for reducing cutting time
+
+**Add Detail** - Increases path complexity
+- Use when layers look too "blocky"
+- Adds intermediate points for smoother curves
+- Good for organic shapes
+
+**Smooth** - Applies curve smoothing
+- Removes jagged edges
+- Creates flowing, organic lines
+- Helps with natural subjects like animals or plants
+
+**Clean Up** - Removes small artifacts
+- Deletes tiny disconnected pieces
+- Cleans up noise from the detection
+- Use before cutting to avoid tiny bits
+
+**Undo** - Reverts last change
+- Full history of up to 20 changes
+- Experiment freely - you can always undo!
+
+**Workflow suggestion:**
+1. Generate your layers
+2. Look at each layer in the dropdown
+3. Clean up small artifacts first
+4. Then simplify or add detail as needed
+5. Finally smooth for polish
+6. Check the 3D preview to see how it looks assembled
+
 ### 3D Preview Controls
 - **Rotation**: Spin the shadow box left/right to view from different angles
 - **Tilt**: Adjust the vertical viewing angle
@@ -141,6 +208,28 @@ The examples in the uploaded images show:
 3. **Orca underwater** - Marine life with bubble details
 
 These demonstrate the shadow box style this tool creates!
+
+## Why These Features Matter
+
+**Manual Depth Guidance:**
+- Real-world images don't always have "obvious" depth
+- A person wearing dark clothes in front of a dark background? The algorithm might struggle.
+- Beach scene with light sand and light sky? Let the app know what's what!
+- You become the "AI trainer" - guide it to see what you see
+
+**Detail Refinement:**
+- Every Cricut has limits on how intricate a cut can be
+- Some designs need simplification, others need more detail
+- Fine-tune for YOUR machine and YOUR material
+- Iterative process: generate, refine, perfect!
+
+**3D Preview:**
+- Catch problems before cutting expensive cardstock
+- See if layers overlap in confusing ways
+- Visualize the final depth effect
+- Make informed decisions about layer count
+
+The combination of these tools gives you unprecedented control over your shadow box creation!
 
 ## Limitations
 
